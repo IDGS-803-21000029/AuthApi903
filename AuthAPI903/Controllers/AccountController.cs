@@ -412,13 +412,22 @@ namespace API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDetailDto>>> GetUsers()
         {
-            var users = await _userManager.Users.Select(u => new UserDetailDto
+            // Obtén la lista de usuarios sin incluir los roles
+            var users = await _userManager.Users
+                .Select(u => new UserDetailDto
+                {
+                    Id = u.Id,
+                    Email = u.Email,
+                    FullName = u.FullName,
+                    // Inicialmente establece Roles como un array vacío o null
+                    Roles = new string[] { }
+                }).ToListAsync();
+
+            // Para cada usuario, obtén los roles de manera asíncrona
+            foreach (var user in users)
             {
-                Id = u.Id,
-                Email = u.Email,
-                FullName = u.FullName,
-                Roles = _userManager.GetRolesAsync(u).Result.ToArray()
-            }).ToListAsync();
+                user.Roles = (await _userManager.GetRolesAsync(await _userManager.FindByIdAsync(user.Id))).ToArray();
+            }
 
             return Ok(users);
         }
